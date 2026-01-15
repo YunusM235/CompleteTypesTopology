@@ -26,6 +26,32 @@ instance {L : Language} {T : L.Theory} {n : ℕ} : TopologicalSpace (T.CompleteT
   TopologicalSpace.generateFrom
   {S | ∃φ, S = basis_set T φ}
 
+lemma basis_set_intersection {L : Language} {n : ℕ} {T : L.Theory}
+                            (φ ψ : (L.withConstants (Fin n)).Sentence) :
+  basis_set T φ ∩ basis_set T ψ = basis_set T (φ ⊓ ψ) := by
+  ext p
+  unfold basis_set
+  constructor
+  · intro ⟨h1,h2⟩
+    apply (FirstOrder.Language.Theory.IsMaximal.mem_iff_models p.isMaximal (φ ⊓ ψ)).mpr
+    apply (FirstOrder.Language.Theory.IsMaximal.mem_iff_models p.isMaximal φ).mp at h1
+    apply (FirstOrder.Language.Theory.IsMaximal.mem_iff_models p.isMaximal ψ).mp at h2
+    exact
+      Language.Theory.models_sentence_iff.mpr fun M a ↦
+        a (h1 M default default) (h2 M default default)
+  · simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+    intro h
+    apply (FirstOrder.Language.Theory.IsMaximal.mem_iff_models p.isMaximal (φ ⊓ ψ)).mp at h
+    constructor
+    · apply (FirstOrder.Language.Theory.IsMaximal.mem_iff_models p.isMaximal φ).mpr
+      intro M a a2
+      specialize h M a a2
+      exact (Language.BoundedFormula.realize_inf.mp h).left
+    · apply (FirstOrder.Language.Theory.IsMaximal.mem_iff_models p.isMaximal ψ).mpr
+      intro M a a2
+      specialize h M a a2
+      exact (Language.BoundedFormula.realize_inf.mp h).right
+
 lemma isBasis {L : Language} {T : L.Theory} {n : ℕ} :
   TopologicalSpace.IsTopologicalBasis {S : Set (T.CompleteType (Fin n)) | ∃φ, S = basis_set T φ}
   := by
@@ -36,43 +62,10 @@ lemma isBasis {L : Language} {T : L.Theory} {n : ℕ} :
     use basis_set T (φ ⊓ ψ)
     simp only [Set.mem_setOf_eq, exists_apply_eq_apply', Set.subset_inter_iff, true_and]
     constructor
-    · unfold basis_set
-      simp only [Set.mem_setOf_eq]
-      rw [hφ, hψ] at hx
-      unfold basis_set at hx
-      simp only [Set.mem_inter_iff, Set.mem_setOf_eq] at hx
-      obtain ⟨hx1, hx2⟩ := hx
-      apply (FirstOrder.Language.Theory.IsMaximal.mem_iff_models x.isMaximal (φ ⊓ ψ)).mpr
-      apply (FirstOrder.Language.Theory.IsMaximal.mem_iff_models x.isMaximal φ).mp at hx1
-      apply (FirstOrder.Language.Theory.IsMaximal.mem_iff_models x.isMaximal ψ).mp at hx2
-      exact
-        Language.Theory.models_sentence_iff.mpr fun M a ↦
-          a (hx1 M default default) (hx2 M default default)
-    · constructor
-      · unfold basis_set
-        intro p hp
-        simp only [Set.mem_setOf_eq] at hp
-        rw [hφ]
-        unfold basis_set
-        rw [Set.mem_setOf_eq]
-        apply (FirstOrder.Language.Theory.IsMaximal.mem_iff_models p.isMaximal (φ ⊓ ψ)).mp at hp
-        apply (FirstOrder.Language.Theory.IsMaximal.mem_iff_models p.isMaximal φ).mpr
-        intro M a a2
-        specialize hp M a a2
-        simp at hp
-        exact hp.left
-      · unfold basis_set
-        intro p hp
-        rw [Set.mem_setOf_eq] at hp
-        rw [hψ]
-        unfold basis_set
-        simp only [Set.mem_setOf_eq]
-        apply (FirstOrder.Language.Theory.IsMaximal.mem_iff_models p.isMaximal (φ ⊓ ψ)).mp at hp
-        apply (FirstOrder.Language.Theory.IsMaximal.mem_iff_models p.isMaximal ψ).mpr
-        intro M a a2
-        specialize hp M a a2
-        simp at hp
-        exact hp.right
+    · rw [← basis_set_intersection φ ψ, ← hφ, ← hψ]
+      exact hx
+    · rw [← basis_set_intersection, ← hφ, ← hψ]
+      grind
   · ext p
     constructor
     · intro h
